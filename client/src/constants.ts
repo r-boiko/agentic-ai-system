@@ -1,0 +1,1 @@
+export const VITE_SERVER_API_URL: string = import.meta.env.VITE_SERVER_API_URL || 'http://localhost:5175';

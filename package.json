@@ -1,0 +1,16 @@
+{
+  "name": "rag-chatbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start:client": "npm run dev --prefix client",
+    "start:server": "npm run dev --prefix server",
+    "dev": "npm run start:client & npm run start:server"
+  },
+  "author": "Roman Boiko",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^3.4.2"
+  }
+}
