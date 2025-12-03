@@ -12,15 +12,18 @@ export function createGeneralKnowledgeTool() {
 
   return new DynamicStructuredTool({
     name: 'general_knowledge',
-    description: 'Answer questions using AI general knowledge. Use this when documents do not contain the answer or for general questions.',
+    description:
+      'Answer questions using AI general knowledge. Use this when documents do not contain the answer or for general questions.',
     schema: z.object({
-      question: z.string().describe('The question to answer using general knowledge'),
+      question: z
+        .string()
+        .describe('The question to answer using general knowledge'),
     }),
     func: async ({ question }) => {
       const response = await llm.invoke(question);
       return JSON.stringify({
         answer: response.content,
-        source: 'AI knowledge'
+        source: 'AI knowledge',
       });
     },
   });
