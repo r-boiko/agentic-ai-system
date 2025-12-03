@@ -23,6 +23,13 @@ export class AgentService {
     const agentExecutor = createReactAgent({
       llm: this.llm,
       tools,
+      messageModifier: `You are a helpful AI assistant. You MUST use the available tools to answer questions.
+      
+      IMPORTANT RULES:
+      1. ALWAYS use vector_search tool first to check uploaded documents
+      2. If vector_search returns "found: false", then use general_knowledge tool
+      3. NEVER answer directly without using tools
+      4. Base your answer on the tool results`,
     });
 
     const reasoning = [];
