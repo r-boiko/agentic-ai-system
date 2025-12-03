@@ -1,6 +1,6 @@
-# RAG Chatbot
+# Agentic AI System
 
-A Retrieval-Augmented Generation (RAG) chatbot built with Node.js and Express that allows users to upload PDF documents and audio files, then chat with their content using OpenAI's GPT models.
+An autonomous AI-Agentic system with reasoning, tool-calling, and self-evaluation capabilities. Built with Node.js and Express, it allows users to upload PDF documents and audio files, then intelligently chat with their content using OpenAI's GPT models and LangChain agents.
 
 ## Features
 
@@ -10,15 +10,43 @@ A Retrieval-Augmented Generation (RAG) chatbot built with Node.js and Express th
 - **Document Status Tracking**: Real-time status updates (processing, ready, error)
 - **Document Information Panel**: View uploaded document details and status
 - **Vector Storage**: Documents stored in Qdrant vector database for efficient retrieval
-- **AI Chat**: Chat with your documents using OpenAI's GPT-3.5-turbo
+- **AI Chat**: Chat with your documents using OpenAI's GPT-4o-mini
 - **Context-Aware Responses**: Retrieves relevant document chunks to provide accurate answers
 - **Modern UI**: Clean, responsive interface built with TailwindCSS and TypeScript
+
+## Agentic AI Features
+
+This chatbot uses an autonomous AI-Agentic system with:
+
+### Reasoning & Tool-Calling
+- **ReAct Agent**: Uses Chain-of-Thought reasoning to decide which tools to use
+- **Vector Search Tool**: Searches uploaded documents for relevant information
+- **General Knowledge Tool**: Falls back to AI's built-in knowledge when documents don't have answers
+
+### Reflection & Evaluation
+- **Self-Evaluation**: Automatically scores responses on relevance, clarity, and tool effectiveness
+- **Quality Metrics**: Provides 1-5 scores for each response dimension
+- **Source Attribution**: Shows whether answer came from documents or AI knowledge
+
+### Agent Decision Flow
+1. User asks a question
+2. Agent analyzes intent and selects appropriate tool
+3. Tries Vector Search first (uploaded documents)
+4. Falls back to General Knowledge if needed
+5. Evaluates its own response quality
+6. Returns answer with tool usage, source attribution, and quality scores
+
+### Technologies
+- **LangChain ReAct Agent**: Autonomous reasoning and tool selection
+- **OpenAI GPT-4o-mini**: Agent reasoning, response generation, and evaluation
+- **Qdrant Vector Store**: Document retrieval
+- **Zod**: Tool schema validation
 
 ## Tech Stack
 
 - **Frontend**: React, TypeScript, Vite, TailwindCSS, Lucide React Icons
 - **Backend**: Node.js, Express.js
-- **AI/ML**: LangChain, OpenAI GPT-3.5-turbo, OpenAI Embeddings, OpenAI Whisper
+- **AI/ML**: LangChain, LangChain Agents, OpenAI GPT-4o-mini, OpenAI Embeddings, OpenAI Whisper
 - **Vector Database**: Qdrant
 - **Document Processing**: PDF-parse, RecursiveCharacterTextSplitter
 - **Audio Processing**: OpenAI Whisper API for speech-to-text
@@ -59,7 +87,7 @@ Client `.env` variables:
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd rag-chatbot
+cd agentic-ai-system
 ```
 
 2. Install server dependencies:
@@ -140,7 +168,9 @@ The application follows a service-oriented architecture with:
 - `AudioTranscriberService`: Transcribes audio files to text using OpenAI Whisper
 - `TextSplitterService`: Splits text into chunks for better retrieval
 - `QdrantVectorStoreService`: Manages vector database operations
-- `RagChainService`: Handles AI chat with document context
+- `AgentService`: Orchestrates ReAct agent with tool selection and execution
+- `EvaluationService`: Self-evaluates agent responses for quality metrics
+- `RagChainService`: Handles AI chat with document context (legacy)
 
 ## How It Works
 
@@ -151,8 +181,11 @@ The application follows a service-oriented architecture with:
 3. **Text Chunking**: Content is split into smaller chunks for better retrieval
 4. **Vectorization**: Text chunks are converted to embeddings and stored in Qdrant
 5. **Chat Query**: User asks a question about the uploaded content
-6. **Retrieval**: Relevant document chunks are retrieved based on similarity
-7. **Generation**: OpenAI GPT generates a response using the retrieved context
+6. **Agent Reasoning**: ReAct agent decides which tool to use (vector search or general knowledge)
+7. **Tool Execution**: Selected tool executes and returns results
+8. **Response Generation**: Agent synthesizes final answer from tool results
+9. **Self-Evaluation**: Response is automatically evaluated for quality
+10. **Display**: Answer shown with tool usage, source, and quality scores
 
 ## Development
 

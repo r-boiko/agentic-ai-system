@@ -1,4 +1,4 @@
-# RAG Chatbot - Project Context
+# Agentic AI System - Project Context
 
 ## Architecture
 - **Frontend**: React + TypeScript + Vite + TailwindCSS (port 5173)

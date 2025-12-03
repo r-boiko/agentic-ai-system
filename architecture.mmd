@@ -1,0 +1,17 @@
+graph TD
+    A[User Question] --> B[Agent Service]
+    B --> C{ReAct Agent}
+    C --> D[Vector Search Tool]
+    C --> E[General Knowledge Tool]
+    D --> F{Found in Docs?}
+    F -->|Yes| G[Return with Source: Documents]
+    F -->|No| E
+    E --> H[Return with Source: AI Knowledge]
+    G --> I[Evaluation Service]
+    H --> I
+    I --> J[Quality Scores]
+    J --> K[Response to User]
+    
+    style B fill:#4CAF50
+    style C fill:#2196F3
+    style I fill:#FF9800
