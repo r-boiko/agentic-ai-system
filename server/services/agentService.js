@@ -9,7 +9,7 @@ export class AgentService {
     this.vectorStore = vectorStore;
     this.llm = new ChatOpenAI({
       apiKey: OPENAI_API_KEY,
-      model: 'gpt-4',
+      model: 'gpt-4o-mini',
       temperature: 0,
     });
   }
@@ -20,46 +20,49 @@ export class AgentService {
       createGeneralKnowledgeTool(),
     ];
 
+    const systemPrompt = `
+      You are a helpful AI assistant. You MUST use the available tools to answer questions.
+
+      RULES:
+      1. ALWAYS call vector_search first to inspect uploaded documents.
+      2. If vector_search returns { found: false }, then call general_knowledge.
+      3. NEVER answer directly without calling a tool.
+      4. Base your final answer ONLY on tool results.
+    `;
+
     const agent = await createReactAgent({
       llm: this.llm,
       tools,
-      prompt: `You are a helpful AI assistant. You MUST use the available tools to answer questions.
-      
-      IMPORTANT RULES:
-      1. ALWAYS use vector_search tool first to check uploaded documents
-      2. If vector_search returns "found: false", then use general_knowledge tool
-      3. NEVER answer directly without using tools
-      4. Base your answer on the tool results`,
+      prompt: systemPrompt,
     });
 
     const result = await agent.invoke({
       messages: [{ role: 'user', content: message }],
     });
 
-    const { reasoning, toolsUsed, source } = this.extractAgentTrace(result.messages);
+    const { toolsUsed, source } = this.extractAgentTrace(result.messages);
 
     return {
-      answer: result.messages[result.messages.length - 1]?.content || 'No response',
-      reasoning,
+      answer: result.messages.at(-1)?.content ?? 'No response',
       toolsUsed,
       source,
     };
   }
 
   extractAgentTrace(messages) {
-    const reasoning = messages
-      .filter((m) => m.tool_calls?.length > 0)
-      .flatMap((m) =>
-        m.tool_calls.map((tc) => ({
-          action: tc.name,
-          input: tc.args,
-          output: messages[messages.indexOf(m) + 1]?.content || '',
-        }))
-      );
+    const toolsUsed = [
+      ...new Set(
+        messages
+          .filter((m) => m.tool_calls?.length)
+          .flatMap((m) => m.tool_calls.map((tc) => tc.name)),
+      ),
+    ];
 
-    const toolsUsed = [...new Set(reasoning.map((r) => r.action))];
-    const source = toolsUsed.includes('vector_search') ? 'documents' : 'AI knowledge';
-
-    return { reasoning, toolsUsed, source };
+    return {
+      toolsUsed,
+      source: toolsUsed.includes('vector_search')
+        ? 'documents'
+        : 'AI knowledge',
+    };
   }
 }

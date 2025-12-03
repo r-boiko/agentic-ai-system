@@ -67,7 +67,7 @@ import { OPENAI_API_KEY } from '../../constants.js';
 export function createGeneralKnowledgeTool() {
   const llm = new ChatOpenAI({
     apiKey: OPENAI_API_KEY,
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4o-mini',
     temperature: 0.7,
   });
 
@@ -112,7 +112,7 @@ export class AgentService {
     this.vectorStore = vectorStore;
     this.llm = new ChatOpenAI({
       apiKey: OPENAI_API_KEY,
-      model: 'gpt-4',
+      model: 'gpt-4o-mini',
       temperature: 0,
     });
   }
@@ -215,7 +215,7 @@ export class EvaluationService {
   constructor() {
     this.llm = new ChatOpenAI({
       apiKey: OPENAI_API_KEY,
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
       temperature: 0,
     });
   }
@@ -533,8 +533,7 @@ This chatbot uses an autonomous AI-Agentic system with:
 
 ### Technologies
 - **LangChain ReAct Agent**: Autonomous reasoning and tool selection
-- **OpenAI GPT-4**: Agent reasoning engine
-- **OpenAI GPT-3.5-turbo**: Response generation and evaluation
+- **OpenAI GPT-4o-mini**: Agent reasoning, response generation, and evaluation
 - **Qdrant Vector Store**: Document retrieval
 - **Zod**: Tool schema validation
 ```

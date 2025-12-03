@@ -1,5 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Loader2, ChevronDown, ChevronUp, Wrench, Brain, Star } from 'lucide-react';
+import {
+  Send,
+  User,
+  Bot,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Wrench,
+  Brain,
+  Star,
+} from 'lucide-react';
 import axios from 'axios';
 import { VITE_SERVER_API_URL } from '../constants';
 import { ChatMessage } from '../types';
@@ -39,10 +49,10 @@ export const Chat = ({ documentReady }: ChatProps) => {
     const userMessage: ChatMessage = {
       text: inputValue,
       sender: 'user',
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
 
@@ -55,21 +65,20 @@ export const Chat = ({ documentReady }: ChatProps) => {
         text: response.data.answer,
         sender: 'bot',
         timestamp: new Date(),
-        reasoning: response.data.reasoning,
         toolsUsed: response.data.toolsUsed,
         source: response.data.source,
         evaluation: response.data.evaluation,
       };
 
-      setMessages(prev => [...prev, botMessage]);
+      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: ChatMessage = {
         text: 'Sorry, something went wrong. Please try again.',
         sender: 'bot',
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +95,9 @@ export const Chat = ({ documentReady }: ChatProps) => {
     <div className="flex flex-col h-full bg-card border border-border rounded-xl">
       {/* Chat Header */}
       <div className="p-4 border-b border-border">
-        <h2 className="text-lg font-semibold text-card-foreground">Chat with your document</h2>
+        <h2 className="text-lg font-semibold text-card-foreground">
+          Chat with your document
+        </h2>
         {!documentReady && (
           <p className="text-sm text-muted-foreground mt-1">
             Upload a PDF or audio file and start asking questions
@@ -113,7 +124,7 @@ export const Chat = ({ documentReady }: ChatProps) => {
                 <Bot className="w-4 h-4 text-primary-foreground" />
               </div>
             )}
-            
+
             <div
               className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                 message.sender === 'user'
@@ -121,20 +132,22 @@ export const Chat = ({ documentReady }: ChatProps) => {
                   : 'bg-muted text-muted-foreground rounded-tl-sm'
               }`}
             >
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {message.text}
+              </p>
               <p className="text-xs opacity-60 mt-2">
                 {message.timestamp.toLocaleTimeString()}
               </p>
 
               {/* Agent Trace */}
-              {message.sender === 'bot' && message.reasoning && (
+              {message.sender === 'bot' && message.evaluation && (
                 <div className="mt-3 space-y-2">
                   <button
                     onClick={() => toggleTrace(index)}
                     className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Brain className="w-3 h-3" />
-                    <span>Agent Trace</span>
+                    <span>Agent Info</span>
                     {expandedTraces.has(index) ? (
                       <ChevronUp className="w-3 h-3" />
                     ) : (
@@ -171,27 +184,25 @@ export const Chat = ({ documentReady }: ChatProps) => {
                             <span className="font-medium">Quality Scores:</span>
                           </div>
                           <div className="pl-5 space-y-1">
-                            <div>Relevance: {message.evaluation.relevance}/5</div>
+                            <div>
+                              Relevance: {message.evaluation.relevance}/5
+                            </div>
                             <div>Clarity: {message.evaluation.clarity}/5</div>
-                            <div>Tool Use: {message.evaluation.toolEffectiveness}/5</div>
+                            <div>
+                              Tool Use: {message.evaluation.toolEffectiveness}
+                              /5
+                            </div>
+                            {message.evaluation.feedback && (
+                              <div className="mt-2 pt-2 border-t border-border/50">
+                                <span className="font-medium">Feedback: </span>
+                                <span className="text-muted-foreground">
+                                  {message.evaluation.feedback}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
-
-                      {/* Reasoning Steps */}
-                      <div className="space-y-1">
-                        <span className="font-medium">Reasoning:</span>
-                        {message.reasoning.map((step, i) => (
-                          <div key={i} className="pl-3 border-l-2 border-primary/20">
-                            <div className="font-medium">{step.action}</div>
-                            <div className="text-muted-foreground">
-                              {typeof step.output === 'string' 
-                                ? step.output.substring(0, 100) + '...'
-                                : JSON.stringify(step.output).substring(0, 100) + '...'}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   )}
                 </div>
@@ -214,7 +225,9 @@ export const Chat = ({ documentReady }: ChatProps) => {
             <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">Thinking...</span>
+                <span className="text-sm text-muted-foreground">
+                  Thinking...
+                </span>
               </div>
             </div>
           </div>
@@ -231,7 +244,11 @@ export const Chat = ({ documentReady }: ChatProps) => {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={documentReady ? "Ask a question..." : "Upload a PDF or audio file first..."}
+            placeholder={
+              documentReady
+                ? 'Ask a question...'
+                : 'Upload a PDF or audio file first...'
+            }
             disabled={isLoading || !documentReady}
             className="flex-1 px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
           />

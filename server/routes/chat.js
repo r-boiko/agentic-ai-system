@@ -14,12 +14,11 @@ chatRouter.post('/chat', async (req, res) => {
     const evaluation = await services.evaluationService.evaluateResponse(
       message,
       agentResult.answer,
-      agentResult.toolsUsed
+      agentResult.toolsUsed,
     );
 
     res.json({
       answer: agentResult.answer,
-      reasoning: agentResult.reasoning,
       toolsUsed: agentResult.toolsUsed,
       source: agentResult.source,
       evaluation,

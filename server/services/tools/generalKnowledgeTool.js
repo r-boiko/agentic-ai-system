@@ -6,7 +6,7 @@ import { OPENAI_API_KEY } from '../../constants.js';
 export function createGeneralKnowledgeTool() {
   const llm = new ChatOpenAI({
     apiKey: OPENAI_API_KEY,
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4o-mini',
     temperature: 0.7,
   });
 

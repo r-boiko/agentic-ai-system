@@ -5,29 +5,30 @@ export class EvaluationService {
   constructor() {
     this.llm = new ChatOpenAI({
       apiKey: OPENAI_API_KEY,
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
       temperature: 0,
     });
   }
 
   async evaluateResponse(question, answer, toolsUsed) {
     const prompt = `
-      Evaluate the following AI response on a scale of 1-5 for each criterion:
+      You are an AI evaluation assistant. Rate the answer using ONLY the criteria below.
+      Return valid raw JSON only (no backticks, no markdown).
       
       Question: ${question}
       Answer: ${answer}
       Tools Used: ${toolsUsed.join(', ')}
       
-      Provide scores (1-5) for:
-      1. Relevance: How relevant is the answer to the question?
-      2. Clarity: How clear and understandable is the answer?
-      3. Tool Effectiveness: Were the right tools used?
+      Rate on the following (1 = poor, 5 = excellent):
+      1. relevance — Is the answer related to the question?
+      2. clarity — Is the answer easy to read & understand?
+      3. toolEffectiveness — Were the correct tools used?
       
-      Respond in JSON format:
+      Respond ONLY in this JSON structure:
       {
-        "relevance": <score>,
-        "clarity": <score>,
-        "toolEffectiveness": <score>,
+        "relevance": <1-5>,
+        "clarity": <1-5>,
+        "toolEffectiveness": <1-5>,
         "feedback": "<brief explanation>"
       }
     `;
@@ -35,14 +36,27 @@ export class EvaluationService {
     const response = await this.llm.invoke(prompt);
 
     try {
-      return JSON.parse(response.content);
-    } catch {
+      const parsed = JSON.parse(response.content);
+      return {
+        relevance: this.sanitizeScore(parsed.relevance),
+        clarity: this.sanitizeScore(parsed.clarity),
+        toolEffectiveness: this.sanitizeScore(parsed.toolEffectiveness),
+        feedback: parsed.feedback || 'No feedback provided',
+      };
+    } catch (err) {
+      console.warn('Evaluation parsing failed:', err);
       return {
         relevance: 3,
         clarity: 3,
         toolEffectiveness: 3,
-        feedback: 'Unable to parse evaluation',
+        feedback: 'Unable to parse evaluation JSON.',
       };
     }
+  }
+
+  sanitizeScore(value) {
+    const num = Number(value);
+    if (isNaN(num)) return 3;
+    return Math.min(5, Math.max(1, num));
   }
 }

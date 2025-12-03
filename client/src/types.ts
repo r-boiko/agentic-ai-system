@@ -1,9 +1,3 @@
-export interface AgentTrace {
-  action: string;
-  input: any;
-  output: string;
-}
-
 export interface Evaluation {
   relevance: number;
   clarity: number;
@@ -15,7 +9,6 @@ export interface ChatMessage {
   text: string;
   sender: 'user' | 'bot';
   timestamp: Date;
-  reasoning?: AgentTrace[];
   toolsUsed?: string[];
   source?: string;
   evaluation?: Evaluation;
