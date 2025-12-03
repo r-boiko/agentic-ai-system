@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Loader2 } from 'lucide-react';
+import { Send, User, Bot, Loader2, ChevronDown, ChevronUp, Wrench, Brain, Star } from 'lucide-react';
 import axios from 'axios';
 import { VITE_SERVER_API_URL } from '../constants';
 import { ChatMessage } from '../types';
@@ -12,7 +12,18 @@ export const Chat = ({ documentReady }: ChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedTraces, setExpandedTraces] = useState<Set<number>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const toggleTrace = (index: number) => {
+    const newExpanded = new Set(expandedTraces);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedTraces(newExpanded);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -43,7 +54,11 @@ export const Chat = ({ documentReady }: ChatProps) => {
       const botMessage: ChatMessage = {
         text: response.data.answer,
         sender: 'bot',
-        timestamp: new Date()
+        timestamp: new Date(),
+        reasoning: response.data.reasoning,
+        toolsUsed: response.data.toolsUsed,
+        source: response.data.source,
+        evaluation: response.data.evaluation,
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -110,6 +125,77 @@ export const Chat = ({ documentReady }: ChatProps) => {
               <p className="text-xs opacity-60 mt-2">
                 {message.timestamp.toLocaleTimeString()}
               </p>
+
+              {/* Agent Trace */}
+              {message.sender === 'bot' && message.reasoning && (
+                <div className="mt-3 space-y-2">
+                  <button
+                    onClick={() => toggleTrace(index)}
+                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Brain className="w-3 h-3" />
+                    <span>Agent Trace</span>
+                    {expandedTraces.has(index) ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    )}
+                  </button>
+
+                  {expandedTraces.has(index) && (
+                    <div className="bg-background/50 rounded-lg p-3 space-y-2 text-xs">
+                      {/* Tools Used */}
+                      {message.toolsUsed && (
+                        <div className="flex items-center gap-2">
+                          <Wrench className="w-3 h-3" />
+                          <span className="font-medium">Tools:</span>
+                          <span>{message.toolsUsed.join(', ')}</span>
+                        </div>
+                      )}
+
+                      {/* Source */}
+                      {message.source && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Source:</span>
+                          <span className="px-2 py-0.5 bg-primary/10 rounded">
+                            {message.source}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Evaluation */}
+                      {message.evaluation && (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Star className="w-3 h-3" />
+                            <span className="font-medium">Quality Scores:</span>
+                          </div>
+                          <div className="pl-5 space-y-1">
+                            <div>Relevance: {message.evaluation.relevance}/5</div>
+                            <div>Clarity: {message.evaluation.clarity}/5</div>
+                            <div>Tool Use: {message.evaluation.toolEffectiveness}/5</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Reasoning Steps */}
+                      <div className="space-y-1">
+                        <span className="font-medium">Reasoning:</span>
+                        {message.reasoning.map((step, i) => (
+                          <div key={i} className="pl-3 border-l-2 border-primary/20">
+                            <div className="font-medium">{step.action}</div>
+                            <div className="text-muted-foreground">
+                              {typeof step.output === 'string' 
+                                ? step.output.substring(0, 100) + '...'
+                                : JSON.stringify(step.output).substring(0, 100) + '...'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {message.sender === 'user' && (

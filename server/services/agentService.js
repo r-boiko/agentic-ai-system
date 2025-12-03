@@ -1,6 +1,5 @@
 import { ChatOpenAI } from '@langchain/openai';
-import { AgentExecutor, createReactAgent } from 'langchain/agents';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { OPENAI_API_KEY } from '../constants.js';
 import { createVectorSearchTool } from './tools/vectorSearchTool.js';
 import { createGeneralKnowledgeTool } from './tools/generalKnowledgeTool.js';
@@ -16,73 +15,77 @@ export class AgentService {
   }
 
   async processQuery(message) {
-    // Create tools
     const tools = [
       createVectorSearchTool(this.vectorStore),
       createGeneralKnowledgeTool(),
     ];
 
-    // Create ReAct prompt
-    const prompt = ChatPromptTemplate.fromTemplate(`
-      You are a helpful AI assistant with access to tools.
-      
-      Answer the user's question using the available tools.
-      First, try to search uploaded documents. If no relevant information is found, use general knowledge.
-      
-      TOOLS:
-      {tools}
-      
-      TOOL NAMES: {tool_names}
-      
-      Question: {input}
-      
-      Thought: {agent_scratchpad}
-    `);
-
-    // Create agent
-    const agent = await createReactAgent({
+    const agentExecutor = createReactAgent({
       llm: this.llm,
       tools,
-      prompt,
     });
 
-    // Create executor
-    const executor = new AgentExecutor({
-      agent,
-      tools,
-      verbose: true,
-      returnIntermediateSteps: true,
+    const reasoning = [];
+    const toolsUsed = new Set();
+    
+    const result = await agentExecutor.invoke({
+      messages: [{ role: 'user', content: message }],
     });
 
-    // Execute
-    const result = await executor.invoke({ input: message });
+    const messages = result.messages || [];
+    const lastMessage = messages[messages.length - 1];
+    const answer = lastMessage?.content || 'No response generated';
 
-    // Extract reasoning and tools used
-    const reasoning = result.intermediateSteps.map((step) => ({
-      action: step.action.tool,
-      input: step.action.toolInput,
-      output: step.observation,
-    }));
-
-    const toolsUsed = [...new Set(reasoning.map((r) => r.action))];
+    // Extract tool calls and results
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      
+      // Check for tool calls
+      if (msg.tool_calls && msg.tool_calls.length > 0) {
+        for (const toolCall of msg.tool_calls) {
+          toolsUsed.add(toolCall.name);
+          
+          // Find the corresponding tool result in next messages
+          let toolOutput = 'Tool executed';
+          if (i + 1 < messages.length && messages[i + 1].content) {
+            toolOutput = messages[i + 1].content;
+          }
+          
+          reasoning.push({
+            action: toolCall.name,
+            input: toolCall.args,
+            output: toolOutput,
+          });
+        }
+      }
+    }
 
     return {
-      answer: result.output,
+      answer,
       reasoning,
-      toolsUsed,
+      toolsUsed: Array.from(toolsUsed),
       source: this.determineSource(reasoning),
     };
   }
 
   determineSource(reasoning) {
+    if (reasoning.length === 0) return 'unknown';
+    
     const lastStep = reasoning[reasoning.length - 1];
-    if (!lastStep) return 'unknown';
-
-    try {
-      const output = JSON.parse(lastStep.output);
-      return output.source || 'unknown';
-    } catch {
-      return 'unknown';
+    
+    // Check if vector_search was used
+    if (reasoning.some(step => step.action === 'vector_search')) {
+      try {
+        const output = JSON.parse(lastStep.output);
+        if (output.found) return 'documents';
+      } catch {}
     }
+    
+    // Check if general_knowledge was used
+    if (reasoning.some(step => step.action === 'general_knowledge')) {
+      return 'AI knowledge';
+    }
+    
+    return 'unknown';
   }
 }

@@ -10,21 +10,27 @@ export function createVectorSearchTool(vectorStore) {
       query: z.string().describe('The search query to find in documents'),
     }),
     func: async ({ query }) => {
-      const retriever = vectorStore.asRetriever({ k: 3 });
-      const results = await retriever.getRelevantDocuments(query);
+      try {
+        const results = await vectorStore.similaritySearch(query, 3);
 
-      if (results.length === 0) {
+        if (results.length === 0) {
+          return JSON.stringify({
+            found: false,
+            message: 'No relevant documents found',
+          });
+        }
+
+        return JSON.stringify({
+          found: true,
+          results: results.map((doc) => doc.pageContent),
+          source: 'documents',
+        });
+      } catch (error) {
         return JSON.stringify({
           found: false,
-          message: 'No relevant documents found',
+          message: `Error searching documents: ${error.message}`,
         });
       }
-
-      return JSON.stringify({
-        found: true,
-        results: results.map((doc) => doc.pageContent),
-        source: 'documents',
-      });
     },
   });
 }

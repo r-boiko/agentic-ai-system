@@ -1,7 +1,6 @@
 import { ChatOpenAI } from '@langchain/openai';
-import { createRetrievalChain } from 'langchain/chains/retrieval';
-import { createStuffDocumentsChain } from 'langchain/chains/combine_documents';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { StringOutputParser } from '@langchain/core/output_parsers';
 import { OPENAI_API_KEY } from '../constants.js';
 
 export class RagChainService {
@@ -19,6 +18,9 @@ export class RagChainService {
       });
 
       const retriever = vectorStore.asRetriever({ k: 3 });
+      const docs = await retriever.getRelevantDocuments(message);
+      
+      const context = docs.map(doc => doc.pageContent).join('\n\n');
 
       const prompt = ChatPromptTemplate.fromTemplate(`
         Answer the question based on the provided context.
@@ -28,18 +30,10 @@ export class RagChainService {
         Question: {input}
       `);
 
-      const documentChain = await createStuffDocumentsChain({
-        llm,
-        prompt,
-      });
-
-      const retrievalChain = await createRetrievalChain({
-        combineDocsChain: documentChain,
-        retriever,
-      });
-
-      const response = await retrievalChain.invoke({ input: message });
-      return response.answer;
+      const chain = prompt.pipe(llm).pipe(new StringOutputParser());
+      const response = await chain.invoke({ context, input: message });
+      
+      return response;
     } catch (e) {
       console.log('RAG catch error', e);
     }
