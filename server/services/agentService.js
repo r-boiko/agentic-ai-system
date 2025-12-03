@@ -20,10 +20,10 @@ export class AgentService {
       createGeneralKnowledgeTool(),
     ];
 
-    const agentExecutor = createReactAgent({
+    const agent = await createReactAgent({
       llm: this.llm,
       tools,
-      messageModifier: `You are a helpful AI assistant. You MUST use the available tools to answer questions.
+      prompt: `You are a helpful AI assistant. You MUST use the available tools to answer questions.
       
       IMPORTANT RULES:
       1. ALWAYS use vector_search tool first to check uploaded documents
@@ -32,67 +32,34 @@ export class AgentService {
       4. Base your answer on the tool results`,
     });
 
-    const reasoning = [];
-    const toolsUsed = new Set();
-    
-    const result = await agentExecutor.invoke({
+    const result = await agent.invoke({
       messages: [{ role: 'user', content: message }],
     });
 
-    const messages = result.messages || [];
-    const lastMessage = messages[messages.length - 1];
-    const answer = lastMessage?.content || 'No response generated';
-
-    // Extract tool calls and results
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i];
-      
-      // Check for tool calls
-      if (msg.tool_calls && msg.tool_calls.length > 0) {
-        for (const toolCall of msg.tool_calls) {
-          toolsUsed.add(toolCall.name);
-          
-          // Find the corresponding tool result in next messages
-          let toolOutput = 'Tool executed';
-          if (i + 1 < messages.length && messages[i + 1].content) {
-            toolOutput = messages[i + 1].content;
-          }
-          
-          reasoning.push({
-            action: toolCall.name,
-            input: toolCall.args,
-            output: toolOutput,
-          });
-        }
-      }
-    }
+    const { reasoning, toolsUsed, source } = this.extractAgentTrace(result.messages);
 
     return {
-      answer,
+      answer: result.messages[result.messages.length - 1]?.content || 'No response',
       reasoning,
-      toolsUsed: Array.from(toolsUsed),
-      source: this.determineSource(reasoning),
+      toolsUsed,
+      source,
     };
   }
 
-  determineSource(reasoning) {
-    if (reasoning.length === 0) return 'unknown';
-    
-    const lastStep = reasoning[reasoning.length - 1];
-    
-    // Check if vector_search was used
-    if (reasoning.some(step => step.action === 'vector_search')) {
-      try {
-        const output = JSON.parse(lastStep.output);
-        if (output.found) return 'documents';
-      } catch {}
-    }
-    
-    // Check if general_knowledge was used
-    if (reasoning.some(step => step.action === 'general_knowledge')) {
-      return 'AI knowledge';
-    }
-    
-    return 'unknown';
+  extractAgentTrace(messages) {
+    const reasoning = messages
+      .filter((m) => m.tool_calls?.length > 0)
+      .flatMap((m) =>
+        m.tool_calls.map((tc) => ({
+          action: tc.name,
+          input: tc.args,
+          output: messages[messages.indexOf(m) + 1]?.content || '',
+        }))
+      );
+
+    const toolsUsed = [...new Set(reasoning.map((r) => r.action))];
+    const source = toolsUsed.includes('vector_search') ? 'documents' : 'AI knowledge';
+
+    return { reasoning, toolsUsed, source };
   }
 }
